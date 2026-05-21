@@ -8,6 +8,8 @@ PDF → Markdown → Smart Chunking + Metadata → Embedding → Qdrant Vector D
 
 > **📖 BACA DOKUMENTASI LENGKAP API:** Silakan cek file [API_REFERENCE.md](file:///c:/Users/Rolly%20Maulana%20Awangg/Documents/if/pede/API_REFERENCE.md) untuk melihat daftar lengkap *endpoint* dan cara melakukan RAG via HTTP!
 
+> **🚀 PROSES PDF DENGAN GPU GRATIS:** Ingin memproses ribuan jurnal ilmiah dalam hitungan detik? Baca panduannya di [COLAB.md](file:///c:/Users/Rolly%20Maulana%20Awangg/Documents/if/pede/COLAB.md).
+
 ## Quick Start
 
 ### 1. Install Dependencies
@@ -49,7 +51,7 @@ python ingest.py --search "neurosymbolic AI"
 | PDF → Markdown | `pymupdf4llm` | Structured markdown with headings |
 | Metadata Extraction | 3-layer (PDF + Regex + CrossRef API) | Title, authors, DOI, abstract, etc. |
 | Chunking | Hybrid (Header + Recursive) | ~1000 char chunks with section metadata |
-| Embedding | `sentence-transformers` (nomic-embed-text-v1.5) | 768-dim vectors (8192 context) |
+| Embedding | `sentence-transformers` (BAAI/bge-m3) | 1024-dim vectors (8192 context, Multi-lingual) |
 | Storage | Qdrant | Vectors + rich payload metadata |
 
 ## 🌟 Advanced SOTA Features (Baru)
@@ -95,13 +97,12 @@ Karena pipeline ini menggunakan model *embedding* lokal dan Qdrant, agen AI berb
 ### Prasyarat di Golang
 1. **Library Qdrant Go**: Gunakan SDK resmi `github.com/qdrant/go-client` atau cukup gunakan HTTP REST API Qdrant.
 2. **Embedding API (Ollama / Python)**: Karena Golang tidak memiliki pustaka native yang efisien untuk _Sentence-Transformers_, cara termudah mem-vektorisasi pertanyaan (_query_) di Golang adalah dengan **Ollama**.
-   - Jalankan: `ollama run nomic-embed-text`
+   - Jalankan: `ollama run bge-m3`
 
 ### Langkah-langkah (Workflow Agent Golang)
 
 **1. Vektorisasi Pertanyaan (Query Embedding)**
-Ubah pertanyaan pengguna menjadi vektor 768-dimensi.
-> ⚠️ **CRITICAL:** Model Nomic-AI v1.5 mengharuskan Anda menambahkan *prefix* `"search_query: "` di depan setiap pertanyaan pencarian.
+Ubah pertanyaan pengguna menjadi vektor 1024-dimensi.
 
 ```go
 package main
@@ -113,12 +114,9 @@ import (
 )
 
 func embedQuery(query string) ([]float32, error) {
-    // Ingat prefix wajib untuk nomic-embed-text!
-	prompt := "search_query: " + query
-	
 	reqBody, _ := json.Marshal(map[string]string{
-		"model":  "nomic-embed-text",
-		"prompt": prompt,
+		"model":  "bge-m3",
+		"prompt": query,
 	})
 
 	resp, err := http.Post("http://localhost:11434/api/embeddings", "application/json", bytes.NewBuffer(reqBody))

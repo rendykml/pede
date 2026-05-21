@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # === Configuration ===
 COLLECTION_NAME = "scientific_articles"
-EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"  # 8192 context window, 768 dimensions
+EMBEDDING_MODEL = "BAAI/bge-m3"  # 8192 context window, 1024 dimensions, Multi-lingual
 QDRANT_PATH = "./qdrant_db"
 
 

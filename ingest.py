@@ -18,13 +18,13 @@ import os
 import sys
 
 # === Dynamic Offline Mode for Hugging Face ===
-# If the Nomic model is already cached locally, force offline mode to avoid network checks and start up instantly.
+# If the model is already cached locally, force offline mode to avoid network checks and start up instantly.
 cache_dir = os.path.join(
     os.path.expanduser("~"), 
     ".cache", 
     "huggingface", 
     "hub", 
-    "models--nomic-ai--nomic-embed-text-v1.5"
+    "models--BAAI--bge-m3"
 )
 if os.path.exists(cache_dir):
     os.environ["HF_HUB_OFFLINE"] = "1"
