@@ -6,6 +6,8 @@ Pipeline CLI untuk mengkonversi artikel ilmiah PDF ke vector embeddings di Qdran
 PDF → Markdown → Smart Chunking + Metadata → Embedding → Qdrant Vector DB
 ```
 
+> **📖 BACA DOKUMENTASI LENGKAP API:** Silakan cek file [API_REFERENCE.md](file:///c:/Users/Rolly%20Maulana%20Awangg/Documents/if/pede/API_REFERENCE.md) untuk melihat daftar lengkap *endpoint* dan cara melakukan RAG via HTTP!
+
 ## Quick Start
 
 ### 1. Start Qdrant (Docker)
