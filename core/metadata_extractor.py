@@ -210,7 +210,11 @@ def extract_metadata(
     import os
     filename = os.path.basename(pdf_path)
 
+    # Use UUIDv5 with filename to ensure deterministic ID and prevent duplicates in DB
+    deterministic_id = str(uuid.uuid5(uuid.NAMESPACE_URL, filename))
+
     meta = ArticleMetadata(
+        article_id=deterministic_id,
         filename=filename,
         total_pages=pdf_native_meta.get("page_count", 0),
     )
@@ -229,7 +233,8 @@ def extract_metadata(
 
     meta.abstract = extract_abstract(markdown_text)
 
-    full_text = pdf_native_meta.get("first_page_text", "") + "\n" + markdown_text[:5000]
+    # Provide enough text context to find DOI (up to 20,000 chars)
+    full_text = pdf_native_meta.get("first_page_text", "") + "\n" + markdown_text[:20000]
     meta.doi = extract_doi(full_text)
 
     if not meta.authors:

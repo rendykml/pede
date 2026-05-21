@@ -94,7 +94,7 @@ def get_pdf_native_metadata(pdf_path: str) -> dict:
     # Extract first page text (for heuristic extraction later)
     first_page_text = ""
     if page_count > 0:
-        first_page_text = doc[0].get_text("text")[:3000]
+        first_page_text = doc[0].get_text("text")
     
     doc.close()
     
