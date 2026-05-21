@@ -87,7 +87,17 @@ options:
   --list                 List articles in Qdrant
   --info                 Show collection stats
   --search QUERY         Test search
+  --doi DOI              Filter search results by DOI
   --include-references   Include references (default is to SKIP them)
+```
+
+**Contoh Pencarian via CLI:**
+```bash
+# Pencarian global (semua jurnal)
+python ingest.py --search "Apa itu neurosymbolic?"
+
+# Pencarian spesifik ke 1 jurnal menggunakan DOI
+python ingest.py --search "Apa hasil eksperimennya?" --doi "10.1016/j.inpa.2026.02.006"
 ```
 
 ## 🤖 Integration with Golang Agentic AI

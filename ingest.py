@@ -224,6 +224,12 @@ Examples:
         default=None,
         help="Search for chunks matching a query (for testing)",
     )
+    parser.add_argument(
+        "--doi",
+        type=str,
+        default=None,
+        help="Filter search results by a specific DOI (used with --search)",
+    )
     
     args = parser.parse_args()
     
@@ -265,8 +271,10 @@ Examples:
     
     # === Search mode (for testing) ===
     if args.search:
-        results = vector_store.search(args.search, n_results=5)
+        results = vector_store.search(args.search, n_results=5, doi_filter=args.doi)
         print(f"\nSearch results for: '{args.search}'")
+        if args.doi:
+            print(f"Filter applied  : DOI = {args.doi}")
         print(f"{'='*70}")
         for i, r in enumerate(results, 1):
             meta = r["metadata"]
