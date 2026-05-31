@@ -206,6 +206,22 @@ class VectorStore:
         logger.info(f"Deleted all chunks for article {article_id}")
         return True
     
+    def article_exists(self, article_id: str) -> bool:
+        """Check if an article is already fully ingested in Qdrant."""
+        result = self.client.count(
+            collection_name=self.collection_name,
+            count_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="article_id",
+                        match=MatchValue(value=article_id),
+                    )
+                ]
+            ),
+            exact=True,
+        )
+        return result.count > 0
+    
     def get_collection_info(self) -> dict:
         """Get collection statistics."""
         info = self.client.get_collection(self.collection_name)
