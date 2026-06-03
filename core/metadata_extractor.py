@@ -172,10 +172,8 @@ def extract_title_from_markdown(markdown_text: str) -> str:
             candidate = original_line
             score = 0
             
-        # Clean up all markdown characters
-        candidate = re.sub(r'^[\#\*\-\_]+\s*', '', candidate)
-        candidate = re.sub(r'\s*[\#\*\-\_]+$', '', candidate)
-        candidate = candidate.strip()
+        # Clean up all markdown characters and unicode lookalikes
+        candidate = candidate.strip(' #*-_•\u2217\uFF0A')
             
         if is_valid_title(candidate):
             # Prioritize earlier lines heavily
@@ -196,9 +194,7 @@ def extract_title_from_markdown(markdown_text: str) -> str:
         best_idx = candidates[0][2]
         if best_idx + 1 < len(lines):
             next_line = lines[best_idx + 1]
-            next_line = re.sub(r'^[\#\*\-\_]+\s*', '', next_line)
-            next_line = re.sub(r'\s*[\#\*\-\_]+$', '', next_line)
-            next_line = next_line.strip()
+            next_line = next_line.strip(' #*-_•\u2217\uFF0A')
             
             if next_line and not is_skip_header(next_line) and len(next_line.split()) >= 1:
                 # Merge if it doesn't look like an author line (no commas, no university, no email)
