@@ -102,12 +102,19 @@ def process_single_pdf(
         possible_ids.append(file_hash_id)
         
         for cand_id in possible_ids:
-            if vector_store.article_exists(cand_id):
+            existing_meta = vector_store.article_exists(cand_id)
+            if existing_meta:
+                title = existing_meta.get("title", "Unknown") if isinstance(existing_meta, dict) else "Unknown"
+                doi = existing_meta.get("doi", "Unknown") if isinstance(existing_meta, dict) else "Unknown"
+                
                 logger.info(f"  -> Article already exists in DB (ID: {cand_id}).")
+                logger.info(f"  -> Existing Title : {title}")
+                logger.info(f"  -> Existing DOI   : {doi}")
                 logger.info("  -> SKIPPING conversion to save compute! ✅")
                 return ArticleMetadata(
                     article_id=cand_id, 
-                    title=pdf_native_meta.get("title") or "Existing Article (Cached)",
+                    title=title if title != "Unknown" else (pdf_native_meta.get("title") or "Existing Article (Cached)"),
+                    doi=doi if doi != "Unknown" else None,
                     filename=filename
                 )
         # === Step 1: PDF -> Markdown ===

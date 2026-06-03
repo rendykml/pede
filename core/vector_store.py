@@ -217,8 +217,9 @@ class VectorStore:
         logger.info(f"Deleted all chunks for article {article_id}")
         return True
     
-    def article_exists(self, article_id: str) -> bool:
-        """Check if an article is already fully ingested in Qdrant and validates its integrity."""
+    def article_exists(self, article_id: str) -> dict | bool:
+        """Check if an article is already fully ingested in Qdrant and validates its integrity.
+        Returns a dict of metadata if it exists, otherwise False."""
         # Check how many chunks exist for this article
         result = self.client.count(
             collection_name=self.collection_name,
@@ -249,14 +250,17 @@ class VectorStore:
                 ]
             ),
             limit=1,
-            with_payload=["total_chunks"],
+            with_payload=["total_chunks", "title", "doi"],
             with_vectors=False,
         )
         
         if points:
             expected_chunks = points[0].payload.get("total_chunks", 0)
             if expected_chunks > 0 and count >= expected_chunks:
-                return True
+                return {
+                    "title": points[0].payload.get("title", "Unknown"),
+                    "doi": points[0].payload.get("doi", "Unknown")
+                }
                 
             # Corrupted/partial state detected
             logger.warning(f"Detected partial insertion for article {article_id} ({count}/{expected_chunks} chunks). Cleaning up for re-processing...")
