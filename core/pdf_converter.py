@@ -48,10 +48,20 @@ def fallback_ocr_pdf(pdf_path: str, image_dir: str | None = None) -> str:
     """Fallback OCR using PP-Structure for image-based or DRM-protected PDFs."""
     logger.info(f"Initiating OCR fallback for {pdf_path}")
     try:
-        from paddleocr import PPStructure
-        
-        # Initialize lazily to save memory if OCR is not needed
-        table_engine = PPStructure(layout=True, show_log=False)
+        try:
+            from paddleocr import PPStructure
+            table_engine = PPStructure(layout=True, show_log=False)
+            use_ppstructure = True
+        except ImportError:
+            try:
+                from paddleocr.paddleocr import PPStructure
+                table_engine = PPStructure(layout=True, show_log=False)
+                use_ppstructure = True
+            except ImportError:
+                logger.warning("PPStructure not found in paddleocr. Falling back to basic PaddleOCR.")
+                from paddleocr import PaddleOCR
+                table_engine = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+                use_ppstructure = False
         
         if image_dir:
             os.makedirs(image_dir, exist_ok=True)
@@ -66,38 +76,45 @@ def fallback_ocr_pdf(pdf_path: str, image_dir: str | None = None) -> str:
             img_np = np.array(img.convert('RGB'))
             img_cv = img_np[:, :, ::-1].copy() # RGB to BGR for cv2
             
-            result = table_engine(img_cv)
-            
-            for region in result:
-                region_type = region.get('type')
-                res = region.get('res')
-                
-                if region_type in ['text', 'title']:
-                    if isinstance(res, list):
-                        for line in res:
-                            if isinstance(line, dict) and 'text' in line:
-                                ocr_text += line['text'] + "\n"
-                            elif isinstance(line, tuple) and len(line) > 0 and isinstance(line[0], str):
-                                ocr_text += line[0] + "\n"
-                
-                elif region_type == 'table':
-                    if isinstance(res, dict) and 'html' in res:
-                        ocr_text += f"\n{res['html']}\n\n"
-                        
-                elif region_type == 'figure':
-                    if image_dir and 'bbox' in region:
-                        bbox = region['bbox']
-                        x1, y1, x2, y2 = [int(v) for v in bbox]
-                        roi = img_cv[y1:y2, x1:x2]
-                        img_id = str(uuid.uuid4())[:8]
-                        img_filename = f"{pdf_basename}_p{i+1}_{img_id}.png"
-                        img_filepath = os.path.join(image_dir, img_filename)
-                        
-                        cv2.imwrite(img_filepath, roi)
-                        # Replace backslashes with forward slashes for markdown path
-                        md_img_path = img_filepath.replace('\\', '/')
-                        ocr_text += f"\n![figure]({md_img_path})\n\n"
-                        
+            if use_ppstructure:
+                result = table_engine(img_cv)
+                for region in result:
+                    region_type = region.get('type')
+                    res = region.get('res')
+                    
+                    if region_type in ['text', 'title']:
+                        if isinstance(res, list):
+                            for line in res:
+                                if isinstance(line, dict) and 'text' in line:
+                                    ocr_text += line['text'] + "\n"
+                                elif isinstance(line, tuple) and len(line) > 0 and isinstance(line[0], str):
+                                    ocr_text += line[0] + "\n"
+                    
+                    elif region_type == 'table':
+                        if isinstance(res, dict) and 'html' in res:
+                            ocr_text += f"\n{res['html']}\n\n"
+                            
+                    elif region_type == 'figure':
+                        if image_dir and 'bbox' in region:
+                            bbox = region['bbox']
+                            x1, y1, x2, y2 = [int(v) for v in bbox]
+                            roi = img_cv[y1:y2, x1:x2]
+                            img_id = str(uuid.uuid4())[:8]
+                            img_filename = f"{pdf_basename}_p{i+1}_{img_id}.png"
+                            img_filepath = os.path.join(image_dir, img_filename)
+                            
+                            cv2.imwrite(img_filepath, roi)
+                            # Replace backslashes with forward slashes for markdown path
+                            md_img_path = img_filepath.replace('\\', '/')
+                            ocr_text += f"\n![figure]({md_img_path})\n\n"
+            else:
+                result = table_engine.ocr(img_np, cls=True)
+                if result and result[0]:
+                    for line in result[0]:
+                        if line and len(line) > 1:
+                            text = line[1][0]
+                            ocr_text += text + "\n"
+                            
             ocr_text += "\n\n"
         return ocr_text
     except Exception as e:

@@ -44,15 +44,29 @@ def generate_image_caption(image_path: str) -> Optional[str]:
             "Keep the description factual, concise, and highly detailed to maximize searchability."
         )
         
-        response = model.generate_content([prompt, img])
-        
-        if response and response.text:
-            return response.text.strip()
+        import time
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = model.generate_content([prompt, img])
+                if response and response.text:
+                    # Sleep to respect 5 RPM free tier limit (1 request every 12 seconds)
+                    time.sleep(12) 
+                    return response.text.strip()
+                break
+            except Exception as e:
+                error_msg = str(e).lower()
+                if "429" in error_msg or "quota" in error_msg:
+                    # Usually the API tells us to wait ~30-45 seconds
+                    sleep_time = 35
+                    logger.warning(f"Rate limit hit (429). Sleeping for {sleep_time} seconds before retry (Attempt {attempt+1}/{max_retries})...")
+                    time.sleep(sleep_time)
+                else:
+                    logger.error(f"Failed to generate image caption for {image_path}: {e}")
+                    return None
+                    
         return None
         
     except ImportError:
         logger.error("google-generativeai or pillow is not installed. Skipping image captioning.")
-        return None
-    except Exception as e:
-        logger.error(f"Failed to generate image caption for {image_path}: {e}")
         return None
