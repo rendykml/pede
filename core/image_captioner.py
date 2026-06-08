@@ -29,8 +29,8 @@ def generate_image_caption(image_path: str) -> Optional[str]:
         import PIL.Image
         
         genai.configure(api_key=api_key)
-        # Using Gemini 1.5 Flash for fast, cheap, and excellent vision capabilities
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Using Gemini 2.5 Flash based on user's dashboard availability
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         img = PIL.Image.open(image_path)
         
