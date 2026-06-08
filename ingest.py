@@ -311,8 +311,11 @@ Examples:
             print("\nNo articles in collection.")
             return
         
+        # Sort by total_chunks (ascending) so the smallest/broken ones appear first
+        articles.sort(key=lambda x: x.get('total_chunks', 0))
+        
         print(f"\n{'='*70}")
-        print(f"Articles in Qdrant ({len(articles)} total)")
+        print(f"Articles in Qdrant ({len(articles)} total) - Sorted by size (chunks)")
         print(f"{'='*70}")
         for i, article in enumerate(articles, 1):
             print(f"\n  [{i}] {article['title']}")
