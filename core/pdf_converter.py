@@ -90,9 +90,19 @@ def convert_pdf_to_markdown(
         show_progress=False,
     )
     
-    # Check if we need OCR fallback (e.g., less than 1000 characters extracted)
-    if len(md_text.strip()) < 1000:
-        logger.warning(f"Extracted text too short ({len(md_text)} chars). Attempting OCR fallback...")
+    # Check if we need OCR fallback 
+    try:
+        doc = fitz.open(pdf_path)
+        page_count = len(doc)
+        doc.close()
+    except Exception:
+        page_count = 1
+
+    char_count = len(md_text.strip())
+    # Fallback to OCR if less than 1000 chars total OR average chars per page is suspiciously low (< 500)
+    # This handles image-based PDFs that have digital text watermarks (e.g., IEEE).
+    if char_count < 1000 or (page_count > 0 and (char_count / page_count) < 500):
+        logger.warning(f"Extracted text too short ({char_count} chars across {page_count} pages). Attempting OCR fallback...")
         ocr_text = fallback_ocr_pdf(pdf_path)
         if len(ocr_text) > len(md_text):
             md_text = ocr_text
