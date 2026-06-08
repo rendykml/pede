@@ -101,6 +101,7 @@ def convert_pdf_to_markdown(
         write_images=write_images,
         image_path=image_dir or "./data/images",
         show_progress=False,
+        use_ocr=False,
     )
     
     # Check if we need OCR fallback 
