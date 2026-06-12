@@ -104,7 +104,6 @@ Pengujian dilakukan dengan beberapa variasi ukuran chunk dan overlap untuk melih
 
 | Chunk Size | Overlap | Paper 1 Chunk | Paper 2 Chunk | Collection Total | Waktu P1 (s) | Waktu P2 (s) |
 | ---------- | ------- | ------------- | ------------- | ---------------- | ------------ | ------------ |
-| Default    | Default | 116           | 33            | 113              | 142.0        | 47.7         |
 | 256        | 20      | 908           | 257           | 793              | 189.7        | 47.2         |
 | 512        | 50      | 501           | 140           | 457              | 186.7        | 49.0         |
 | 512        | 100     | 509           | 144           | 469              | 193.4        | 52.4         |
