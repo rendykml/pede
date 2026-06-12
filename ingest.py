@@ -282,12 +282,6 @@ Examples:
         help="Search for chunks matching a query (for testing)",
     )
     parser.add_argument(
-        "--delete",
-        type=str,
-        default=None,
-        help="Delete all chunks of an article by its article_id",
-    )
-    parser.add_argument(
         "--doi",
         type=str,
         default=None,
@@ -311,11 +305,8 @@ Examples:
             print("\nNo articles in collection.")
             return
         
-        # Sort by total_chunks (ascending) so the smallest/broken ones appear first
-        articles.sort(key=lambda x: x.get('total_chunks', 0))
-        
         print(f"\n{'='*70}")
-        print(f"Articles in Qdrant ({len(articles)} total) - Sorted by size (chunks)")
+        print(f"Articles in Qdrant ({len(articles)} total)")
         print(f"{'='*70}")
         for i, article in enumerate(articles, 1):
             print(f"\n  [{i}] {article['title']}")
@@ -348,13 +339,6 @@ Examples:
             print(f"      Article: {meta.get('title', 'N/A')}")
             print(f"      Section: {meta.get('section_header', 'N/A')}")
             print(f"      Content: {r['content'][:200]}...")
-        return
-    
-    # === Delete mode ===
-    if args.delete:
-        print(f"\nAttempting to delete article ID: {args.delete}")
-        vector_store.delete_article(args.delete)
-        print(f"✅ Successfully deleted article '{args.delete}' from Qdrant.")
         return
     
     # === Ingest mode ===
