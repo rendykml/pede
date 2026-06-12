@@ -9,10 +9,6 @@ import fitz  # PyMuPDF
 import os
 import logging
 import re
-import numpy as np
-import cv2
-import uuid
-from pdf2image import convert_from_path
 
 logger = logging.getLogger(__name__)
 
@@ -43,83 +39,6 @@ def clean_markdown_text(md_text: str) -> str:
     
     return md_text
 
-
-def fallback_ocr_pdf(pdf_path: str, image_dir: str | None = None) -> str:
-    """Fallback OCR using PP-Structure for image-based or DRM-protected PDFs."""
-    logger.info(f"Initiating OCR fallback for {pdf_path}")
-    try:
-        try:
-            from paddleocr import PPStructure
-            table_engine = PPStructure(layout=True, show_log=False)
-            use_ppstructure = True
-        except ImportError:
-            try:
-                from paddleocr.paddleocr import PPStructure
-                table_engine = PPStructure(layout=True, show_log=False)
-                use_ppstructure = True
-            except ImportError:
-                logger.warning("PPStructure not found in paddleocr. Falling back to basic PaddleOCR.")
-                from paddleocr import PaddleOCR
-                table_engine = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
-                use_ppstructure = False
-        
-        if image_dir:
-            os.makedirs(image_dir, exist_ok=True)
-            
-        images = convert_from_path(pdf_path)
-        ocr_text = ""
-        pdf_basename = os.path.splitext(os.path.basename(pdf_path))[0]
-        
-        for i, img in enumerate(images):
-            logger.info(f"OCR processing page {i+1}/{len(images)}...")
-            # Convert PIL image to numpy array BGR format for OpenCV/PPStructure
-            img_np = np.array(img.convert('RGB'))
-            img_cv = img_np[:, :, ::-1].copy() # RGB to BGR for cv2
-            
-            if use_ppstructure:
-                result = table_engine(img_cv)
-                for region in result:
-                    region_type = region.get('type')
-                    res = region.get('res')
-                    
-                    if region_type in ['text', 'title']:
-                        if isinstance(res, list):
-                            for line in res:
-                                if isinstance(line, dict) and 'text' in line:
-                                    ocr_text += line['text'] + "\n"
-                                elif isinstance(line, tuple) and len(line) > 0 and isinstance(line[0], str):
-                                    ocr_text += line[0] + "\n"
-                    
-                    elif region_type == 'table':
-                        if isinstance(res, dict) and 'html' in res:
-                            ocr_text += f"\n{res['html']}\n\n"
-                            
-                    elif region_type == 'figure':
-                        if image_dir and 'bbox' in region:
-                            bbox = region['bbox']
-                            x1, y1, x2, y2 = [int(v) for v in bbox]
-                            roi = img_cv[y1:y2, x1:x2]
-                            img_id = str(uuid.uuid4())[:8]
-                            img_filename = f"{pdf_basename}_p{i+1}_{img_id}.png"
-                            img_filepath = os.path.join(image_dir, img_filename)
-                            
-                            cv2.imwrite(img_filepath, roi)
-                            # Replace backslashes with forward slashes for markdown path
-                            md_img_path = img_filepath.replace('\\', '/')
-                            ocr_text += f"\n![figure]({md_img_path})\n\n"
-            else:
-                result = table_engine.ocr(img_np, cls=True)
-                if result and result[0]:
-                    for line in result[0]:
-                        if line and len(line) > 1:
-                            text = line[1][0]
-                            ocr_text += text + "\n"
-                            
-            ocr_text += "\n\n"
-        return ocr_text
-    except Exception as e:
-        logger.error(f"OCR Fallback failed: {e}")
-        return ""
 
 
 def convert_pdf_to_markdown(
@@ -152,51 +71,10 @@ def convert_pdf_to_markdown(
         write_images=write_images,
         image_path=image_dir or "./data/images",
         show_progress=False,
-        use_ocr=False,
     )
-    
-    # Check if we need OCR fallback 
-    try:
-        doc = fitz.open(pdf_path)
-        page_count = len(doc)
-        doc.close()
-    except Exception:
-        page_count = 1
-
-    char_count = len(md_text.strip())
-    # Fallback to OCR if less than 1000 chars total OR average chars per page is suspiciously low (< 500)
-    # This handles image-based PDFs that have digital text watermarks (e.g., IEEE).
-    if char_count < 1000 or (page_count > 0 and (char_count / page_count) < 500):
-        logger.warning(f"Extracted text too short ({char_count} chars across {page_count} pages). Attempting OCR fallback...")
-        ocr_text = fallback_ocr_pdf(pdf_path, image_dir=image_dir or "./data/images")
-        if len(ocr_text) > len(md_text):
-            md_text = ocr_text
-            logger.info(f"OCR fallback successful. New length: {len(md_text)} chars")
     
     # Apply modern RAG text cleaning
     md_text = clean_markdown_text(md_text)
-    
-    # Inject Image Captions for Multimodal RAG
-    def caption_replacer(match):
-        alt_text = match.group(1)
-        img_path = match.group(2)
-        
-        # If it's a local file, try to caption it
-        if not img_path.startswith("http"):
-            caption = None
-            try:
-                from core.image_captioner import generate_image_caption
-                caption = generate_image_caption(img_path)
-            except Exception as e:
-                logger.error(f"Error calling image captioner: {e}")
-            
-            if caption:
-                logger.info(f"Successfully generated caption for {img_path}")
-                return f"![{alt_text}]({img_path})\n\n> **Image Description (AI Generated):** {caption}\n"
-        
-        return match.group(0) # unchanged
-
-    md_text = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', caption_replacer, md_text)
     
     logger.info(f"Conversion complete. Markdown length: {len(md_text)} chars")
     return md_text
