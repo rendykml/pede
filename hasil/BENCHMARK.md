@@ -92,7 +92,6 @@ Pengujian dilakukan dengan beberapa variasi ukuran chunk dan overlap untuk melih
 
 | Chunk Size | Overlap |
 | ---------- | ------- |
-| Default    | Default |
 | 256        | 20      |
 | 512        | 50      |
 | 512        | 100     |
